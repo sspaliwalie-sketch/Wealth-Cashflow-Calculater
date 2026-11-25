@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#10243a">
+<meta name="description" content="Personal wealth and monthly profit allocation calculator">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Suraj Wealth Manager</title>
+<style>
+:root{--navy:#10243a;--blue:#245b87;--bg:#f3f6fa;--card:#fff;--ink:#172536;--muted:#65758a;--line:#e3e9f0;--green:#16734b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font:15px system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink)}
+header{background:linear-gradient(135deg,#10243a,#245b87);color:white;padding:24px 18px 22px}
+header h1{margin:0 0 5px;font-size:23px}header p{margin:0;color:#d8e6f2;font-size:13px}
+main{max-width:760px;margin:auto;padding:16px}
+.tabs{display:flex;gap:8px;margin:0 0 14px}.tabs button{flex:1;border:1px solid var(--line);background:white;color:var(--navy);padding:12px;border-radius:12px;font-weight:700}
+.tabs button.active{background:var(--navy);color:white;border-color:var(--navy)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 3px 14px #10243a0a}
+h2{font-size:17px;margin:0 0 12px}.field label{display:block;font-weight:650;margin-bottom:7px}.field input,.field select{width:100%;padding:13px;border:1px solid #cbd5e1;border-radius:10px;font:inherit;background:white}
+.field{margin-bottom:13px}.hint{color:var(--muted);font-size:12px;line-height:1.45;margin-top:6px}
+button.primary{background:var(--blue);color:white;border:0;border-radius:11px;padding:13px 16px;font-weight:750;width:100%;font-size:15px}
+.result-head{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px}.total{font-size:20px;font-weight:800;color:var(--navy)}
+.item{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid var(--line)}.item:first-of-type{border-top:0}.item b{white-space:nowrap}.item small{display:block;color:var(--muted);margin-top:2px}
+.pct{color:var(--muted);font-size:12px;white-space:nowrap}
+.note{background:#fff8e7;border:1px solid #f1dfae;padding:12px;border-radius:12px;font-size:12px;line-height:1.5;color:#72551b}
+.good{color:var(--green);font-weight:700}.hidden{display:none}.footer{font-size:11px;color:var(--muted);text-align:center;padding:10px}
+.actions{display:flex;gap:8px}.actions button{flex:1;background:#eaf0f6;color:var(--navy);border:0;border-radius:10px;padding:11px;font-weight:700}
+@media(min-width:620px){main{padding:22px}.cols{display:grid;grid-template-columns:1fr 1fr;gap:14px}.cols .card{margin-bottom:0}}
+</style>
+</head>
+<body>
+<header><h1>Suraj Wealth Manager</h1><p>Wealth allocation • Monthly profit planning • Saved locally on this device</p></header>
+<main>
+<div class="tabs"><button id="wealthTab" class="active" onclick="showTab('wealth')">Wealth Allocation</button><button id="profitTab" onclick="showTab('profit')">Monthly Profit</button></div>
+<section id="wealth">
+<div class="card">
+<h2>Enter total wealth</h2>
+<div class="field"><label for="wealthAmount">Total investible wealth (₹)</label><input id="wealthAmount" type="number" min="0" step="1000" placeholder="e.g. 5000000" inputmode="decimal"></div>
+<button class="primary" onclick="calcWealth()">Calculate allocation</button>
+<div class="hint">Enter the amount you want to allocate. Percentages are based on your stated strategy and total 100%.</div>
+</div>
+<div class="card hidden" id="wealthResult">
+<div class="result-head"><h2>Suggested allocation</h2><div class="total" id="wealthTotal"></div></div>
+<div id="wealthRows"></div>
+<div class="actions"><button onclick="copyResult('wealthRows')">Copy breakdown</button><button onclick="savePlan('wealth')">Save plan</button></div>
+</div>
+</section>
+<section id="profit" class="hidden">
+<div class="card">
+<h2>Enter last month's profit</h2>
+<div class="field"><label for="profitAmount">Profit before tax provision (₹)</label><input id="profitAmount" type="number" min="0" step="100" placeholder="e.g. 200000" inputmode="decimal"></div>
+<div class="field"><label for="taxMode">Tax provision method</label><select id="taxMode" onchange="toggleTax()"><option value="amount">Enter estimated tax amount (recommended)</option><option value="rate">Use an estimated tax percentage</option></select></div>
+<div class="field" id="taxAmountField"><label for="taxAmount">Tax provision amount (₹)</label><input id="taxAmount" type="number" min="0" step="100" placeholder="Enter amount" inputmode="decimal"></div>
+<div class="field hidden" id="taxRateField"><label for="taxRate">Estimated tax provision (%)</label><input id="taxRate" type="number" min="0" max="100" step="0.1" value="25" inputmode="decimal"></div>
+<button class="primary" onclick="calcProfit()">Calculate profit allocation</button>
+<div class="hint">Tax is not automatically determined from one month's profit. Use an estimate based on your applicable tax regime, annual taxable income and other income, or consult your tax adviser.</div>
+</div>
+<div class="card hidden" id="profitResult">
+<div class="result-head"><h2>Monthly profit allocation</h2><div class="total" id="profitTotal"></div></div>
+<div id="profitRows"></div>
+<div class="actions"><button onclick="copyResult('profitRows')">Copy breakdown</button><button onclick="savePlan('profit')">Save plan</button></div>
+</div>
+</section>
+<div class="card">
+<h2>Saved plans on this device</h2><div id="savedPlans" class="hint">No plans saved yet.</div>
+<div class="actions"><button onclick="exportData()">Export saved plans</button><button onclick="clearPlans()">Clear saved plans</button></div>
+</div>
+<div class="note">Investment risk reminder: the 3–6 month equity buckets and intraday allocation can be volatile and may result in losses. Consider keeping emergency funds and near-term obligations separate; this calculator is an allocation worksheet, not investment advice.</div>
+<div class="footer">Your entries and saved plans stay in this browser unless you export them.</div>
+</main>
+<script>
+const fmt=n=>'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:2});
+const num=id=>Number(document.getElementById(id).value||0);
+function showTab(t){['wealth','profit'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==t));document.getElementById('wealthTab').classList.toggle('active',t==='wealth');document.getElementById('profitTab').classList.toggle('active',t==='profit')}
+function rows(target,items,total){document.getElementById(target).innerHTML=items.map(([name,pct,val,desc])=>`<div class="item"><div>${name}<small>${desc||''}</small></div><div style="text-align:right"><b>${fmt(val)}</b><div class="pct">${pct}%</div></div></div>`).join('')}
+function calcWealth(){let a=num('wealthAmount');if(a<=0){alert('Please enter a wealth amount greater than zero.');return}
+let it=[['Long-term equity investment / real estate',41,a*.41,'Long-term allocation'],['Short-term equity investment 1',15,a*.15,'Target horizon: 3–6 months'],['Short-term equity investment 2',15,a*.15,'Target horizon: 3–6 months'],['Short-term equity investment 3',15,a*.15,'Target horizon: 3–6 months'],['Intraday investment allocation',7,a*.07,'Higher-risk trading capital'],['Intraday backup reserve',7,a*.07,'Separate backup allocation']];
+rows('wealthRows',it,a);document.getElementById('wealthTotal').textContent=fmt(a);document.getElementById('wealthResult').classList.remove('hidden')}
+function toggleTax(){let rate=document.getElementById('taxMode').value==='rate';document.getElementById('taxRateField').classList.toggle('hidden',!rate);document.getElementById('taxAmountField').classList.toggle('hidden',rate)}
+function calcProfit(){let p=num('profitAmount');if(p<=0){alert('Please enter a profit amount greater than zero.');return}
+let tax=document.getElementById('taxMode').value==='rate'?p*num('taxRate')/100:num('taxAmount');if(tax<0||tax>p){alert('Tax provision must be between zero and the profit amount.');return}
+let net=p-tax;let it=[['Tax provision',Math.round(tax/p*10000)/100,tax,'Estimated amount set by you'],['Monthly expenses',30,net*.30,'30% of profit after tax provision'],['Long-term equity investment',30,net*.30,'30% of profit after tax provision'],['Income / skill upgrade',30,net*.30,'30% of profit after tax provision'],['Charity',10,net*.10,'10% of profit after tax provision']];
+rows('profitRows',it,p);document.getElementById('profitTotal').textContent=fmt(p);document.getElementById('profitResult').classList.remove('hidden')}
+function copyResult(id){let s=[...document.getElementById(id).querySelectorAll('.item')].map(x=>x.innerText.replace(/\n/g,' | ')).join('\n');navigator.clipboard?.writeText(s).then(()=>alert('Breakdown copied.')).catch(()=>alert(s))}
+function getPlans(){try{return JSON.parse(localStorage.getItem('swm_plans')||'[]')}catch(e){return []}}
+function savePlan(type){let data={type,date:new Date().toLocaleString('en-IN'),amount:type==='wealth'?num('wealthAmount'):num('profitAmount'),rows:[...document.getElementById(type+'Rows').querySelectorAll('.item')].map(x=>x.innerText)};let a=getPlans();a.unshift(data);localStorage.setItem('swm_plans',JSON.stringify(a.slice(0,50)));renderSaved();alert('Plan saved on this device.')}
+function renderSaved(){let a=getPlans();document.getElementById('savedPlans').innerHTML=a.length?a.map(x=>`<div class="item"><div><b>${x.type==='wealth'?'Wealth allocation':'Monthly profit'}</b><small>${x.date}</small></div><b>${fmt(x.amount)}</b></div>`).join(''):'No plans saved yet.'}
+function exportData(){let blob=new Blob([JSON.stringify(getPlans(),null,2)],{type:'application/json'}),u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download='suraj-wealth-plans.json';a.click();URL.revokeObjectURL(u)}
+function clearPlans(){if(confirm('Delete all saved plans from this browser?')){localStorage.removeItem('swm_plans');renderSaved()}}
+renderSaved();
+if('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>
